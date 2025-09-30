@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Statement</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 350px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      input[type="file"] {
+        margin: 1rem 0;
+        padding: 0.5rem;
+        border: 2px dashed #aaa;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      input[type="submit"] {
+        background: #4caf50;
+        color: white;
+        padding: 0.7rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s ease;
+      }
+
+      input[type="submit"]:hover {
+        background: #45a049;
+      }
+
+      input[type="submit"]:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .note {
+        font-size: 0.9rem;
+        color: #777;
+        margin-top: 1rem;
+      }
+
+      .result-container {
+        margin-top: 1.5rem;
+        max-height: 250px;
+        overflow-y: auto;
+        text-align: left;
+      }
+
+      .result-container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      .result-container th,
+      .result-container td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+
+      .result-container th {
+        background-color: #f2f2f2;
+        color: #333;
+        position: sticky;
+        top: 0;
+      }
+
+      .result-container tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Upload Your Statement</h1>
+      <form
+        id="upload-form"
+        action="/upload"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <label for="statement-file" class="sr-only"
+          >Upload Statement File</label
+        >
+        <input
+          type="file"
+          name="file"
+          id="statement-file"
+          accept=".csv,.xlsx"
+          required
+          title="Upload your bank statement (CSV, or Excel)"
+        />
+        <br />
+        <input
+          type="submit"
+          value="Upload"
+          title="Click to upload your statement"
+        />
+      </form>
+      <p class="note">Allowed formats: CSV, Excel</p>
+      <div id="result-container" class="result-container"></div>
+    </div>
+
+    <script>
+      const form = document.getElementById("upload-form");
+      const resultContainer = document.getElementById("result-container");
+      const submitButton = form.querySelector('input[type="submit"]');
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault(); // Prevent default form submission
+
+        submitButton.value = "Processing...";
+        submitButton.disabled = true;
+        resultContainer.innerHTML = ""; // Clear previous results
+
+        const formData = new FormData(form);
+
+        try {
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "An unknown error occurred.");
+          }
+
+          // Display the summary
+          let html = "<h3>Monthly Summary</h3><table>";
+          html +=
+            "<tr><th>Month</th><th>Credit Count</th><th>Total Credits</th></tr>";
+          result.forEach((row) => {
+            html += `<tr><td>${row.month}</td><td>${
+              row.credit_count
+            }</td><td>${row.total_credits.toFixed(2)}</td></tr>`;
+          });
+          html += "</table>";
+          resultContainer.innerHTML = html;
+        } catch (error) {
+          resultContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        } finally {
+          submitButton.value = "Upload";
+          submitButton.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

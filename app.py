@@ -33,4 +33,4 @@ def upload_file():
 
 if __name__ == "__main__":
     # 👇 For local testing only
-    app.run(debug=True, host="127.0.0.1", port=5300)
+    app.run(debug=True)

@@ -126,12 +126,32 @@
       </form>
       <p class="note">Allowed formats: CSV, Excel</p>
       <div id="result-container" class="result-container"></div>
+      <button
+        id="download-csv"
+        style="
+          display: none;
+          margin-top: 1rem;
+          background: #0b723b;
+          color: white;
+          padding: 0.7rem 1.5rem;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1rem;
+        "
+      >
+        Download CSV
+      </button>
     </div>
 
     <script>
       const form = document.getElementById("upload-form");
       const resultContainer = document.getElementById("result-container");
       const submitButton = form.querySelector('input[type="submit"]');
+      const downloadBtn = document.getElementById("download-csv");
+
+      // Store summary data to be accessible for download
+      let summaryData = [];
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault(); // Prevent default form submission
@@ -139,6 +159,8 @@
         submitButton.value = "Processing...";
         submitButton.disabled = true;
         resultContainer.innerHTML = ""; // Clear previous results
+        downloadBtn.style.display = "none"; // Hide download button
+        summaryData = []; // Clear previous data
 
         const formData = new FormData(form);
 
@@ -154,6 +176,8 @@
             throw new Error(result.error || "An unknown error occurred.");
           }
 
+          summaryData = result; // Store the result
+
           // Display the summary
           let html = "<h3>Monthly Summary</h3><table>";
           html +=
@@ -165,12 +189,39 @@
           });
           html += "</table>";
           resultContainer.innerHTML = html;
+
+          if (summaryData.length > 0) {
+            downloadBtn.style.display = "inline-block"; // Show download button
+          }
         } catch (error) {
           resultContainer.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
         } finally {
           submitButton.value = "Upload";
           submitButton.disabled = false;
         }
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        if (summaryData.length === 0) return;
+
+        // Create CSV content
+        const headers = "Month,Credit Count,Total Credits";
+        const csvRows = summaryData.map(
+          (row) =>
+            `${row.month},${row.credit_count},${row.total_credits.toFixed(2)}`
+        );
+        const csvContent =
+          "data:text/csv;charset=utf-8," + [headers, ...csvRows].join("\n");
+
+        // Create a link and trigger the download
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "monthly_credit_summary.csv");
+        document.body.appendChild(link); // Required for Firefox
+
+        link.click();
+        document.body.removeChild(link);
       });
     </script>
   </body>
